@@ -4,6 +4,9 @@ from openid.consumer.consumer import Consumer, SUCCESS
 from openid.store.memstore import MemoryStore
 from urllib.parse import parse_qs, urlparse
 import uuid
+import httpx
+
+TELEGRAM_BOT_TOKEN = "7527016074:AAHYfO49uKF4uGPBA8sKNgn7_EWQNAe6AXw"
 
 STEAM_OPENID_URL = "https://steamcommunity.com/openid"
 store = MemoryStore()
@@ -24,16 +27,19 @@ async def start_steam_auth(tg_id: int):
     return RedirectResponse(redirect_url)
 
 async def handle_steam_response(request: Request):
-    session_id = request.query_params.get("session_id")
-    if not session_id or session_id not in pending_telegram_ids:
-        return HTMLResponse("❌ session_id не найден")
-    consumer = get_consumer(session_id)
-    url = str(request.url)
-    query_dict = {k: v[0] for k, v in parse_qs(urlparse(url).query).items()}
-    openid_response = consumer.complete(query_dict, url)
-    if openid_response.status != SUCCESS:
-        return HTMLResponse("❌ Не удалось авторизоваться через Steam")
-    claimed_id = openid_response.getDisplayIdentifier()
+    ...
     steam_id = claimed_id.split("/")[-1]
     tg_id = pending_telegram_ids.pop(session_id)
-    return HTMLResponse(f"✅ Привязка прошла успешно!<br>Steam ID: {steam_id}<br>Telegram ID: {tg_id}")
+
+    # ✅ Уведомим в Telegram
+    async with httpx.AsyncClient() as client:
+        await client.post(
+            f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage",
+            json={
+                "chat_id": tg_id,
+                "text": f"✅ Вы успешно привязали Steam!\nSteam ID: {steam_id}"
+            }
+        )
+
+    # Можно просто вернуть минимальную HTML-страницу
+    return HTMLResponse("Вы можете закрыть это окно ✅")
