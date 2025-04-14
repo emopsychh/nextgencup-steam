@@ -17,9 +17,9 @@ async def start_steam_auth(tg_id: int):
     consumer = get_consumer(session_id)
     auth_request = consumer.begin(STEAM_OPENID_URL)
     redirect_url = auth_request.redirectURL(
-        realm="https://your-domain.onrender.com",
-        return_to=f"https://your-domain.onrender.com/auth/steam/callback?session_id={session_id}"
-    )
+    realm="https://nextgencup-steam.onrender.com",
+    return_to=f"https://nextgencup-steam.onrender.com/auth/steam/callback?session_id={session_id}"
+)
     pending_telegram_ids[session_id] = tg_id
     return RedirectResponse(redirect_url)
 
